@@ -26,5 +26,3 @@
 ## Notes
 
 - Service initialization and running logic is within `internal/app` package, `main` only creates and launches the app;
-- Connect to the telegram bot with: `https://t.me/Go3MoviesBot` or `@Go3MoviesBot`;
-
