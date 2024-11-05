@@ -1,0 +1,44 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./deploy/docker/Dockerfile
+    ports:
+      - 8888:8888
+    env_file: .env
+    restart: on-failure
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:alpine
+    ports:
+      - 5432:5432 # remove before deploying
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DATABASE}
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+      - ./db/create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    restart: on-failure
+
+#  prometheus:
+#    image: prom/prometheus:latest
+#    volumes:
+#      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+#
+#  grafana:
+#    image: grafana/grafana:latest
+#    ports:
+#      - 3000:3000
+#    environment:
+#      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
+#      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+#    volumes:
+#      - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+#      - ./grafana/dashboard.yml:/etc/grafana/provisioning/dashboards/main.yml
+#      - ./grafana/dashboards:/etc/dashboards
+
+volumes:
+  db_data:
