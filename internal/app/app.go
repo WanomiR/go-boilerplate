@@ -7,16 +7,17 @@ import (
 	"os/signal"
 	"runtime/debug"
 
-	"studentgit.kata.academy/movie-recommendation-platform/telegram-bot-service/internal/infrastructure/repository"
+	"go-boilerplate/internal/infrastructure/repository"
 
 	"go.uber.org/zap"
 
-	"studentgit.kata.academy/movie-recommendation-platform/telegram-bot-service/pkg/psql"
+	"go-boilerplate/pkg/psql"
+
+	"go-boilerplate/pkg/e"
+	"go-boilerplate/pkg/logger"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/ilyakaznacheev/cleanenv"
-	"studentgit.kata.academy/movie-recommendation-platform/telegram-bot-service/pkg/e"
-	"studentgit.kata.academy/movie-recommendation-platform/telegram-bot-service/pkg/logger"
 )
 
 const (

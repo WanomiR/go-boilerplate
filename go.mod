@@ -1,4 +1,4 @@
-module studentgit.kata.academy/movie-recommendation-platform/telegram-bot-service
+module go-boilerplate
 
 go 1.23.0
 

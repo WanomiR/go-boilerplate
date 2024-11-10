@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"studentgit.kata.academy/movie-recommendation-platform/telegram-bot-service/internal/app"
+	"go-boilerplate/internal/app"
 )
 
 func main() {

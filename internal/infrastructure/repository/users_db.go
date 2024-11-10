@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"studentgit.kata.academy/movie-recommendation-platform/telegram-bot-service/pkg/e"
+	"go-boilerplate/pkg/e"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )

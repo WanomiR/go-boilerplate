@@ -1,181 +1,179 @@
 version: 3
 
 silent: true
-dotenv: ['.env']
+dotenv: [".env"]
 
 vars:
-  PG_CONT_NAME: telegram-bot-service-postgres-1
-  DOCKER_DIR_SETUP: --file deploy/docker/docker-compose.yml --project-directory ./
-  DB_MIGRATIONS_DIR: ./db/migrations
+   PG_CONT_NAME: go-boilerplate-postgres-1
+   DOCKER_DIR_SETUP: --file deploy/docker/docker-compose.yml --project-directory ./
+   DB_MIGRATIONS_DIR: ./db/migrations
 
-  TOOL_BIN_DIR: ./bin/tools
+   TOOL_BIN_DIR: ./bin/tools
 
-  TOOL_LINT_SRC: github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-  TOOL_LINT: ./{{ .TOOL_BIN_DIR }}/golangci-lint
+   TOOL_LINT_SRC: github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+   TOOL_LINT: ./{{ .TOOL_BIN_DIR }}/golangci-lint
 
-  TOOL_GO_IMPORTS_SRC: golang.org/x/tools/cmd/goimports@latest
-  TOOL_GO_IMPORTS: ./{{ .TOOL_BIN_DIR }}/goimports
+   TOOL_GO_IMPORTS_SRC: golang.org/x/tools/cmd/goimports@latest
+   TOOL_GO_IMPORTS: ./{{ .TOOL_BIN_DIR }}/goimports
 
-  TOOL_GOFUMPT_SRC: mvdan.cc/gofumpt@latest
-  TOOL_GOFUMPT: ./{{ .TOOL_BIN_DIR }}/gofumpt
+   TOOL_GOFUMPT_SRC: mvdan.cc/gofumpt@latest
+   TOOL_GOFUMPT: ./{{ .TOOL_BIN_DIR }}/gofumpt
 
-  TOOL_PROTO_SRC: google.golang.org/protobuf/cmd/protoc-gen-go@latest
-  TOOL_PROTO: ./{{ .TOOL_BIN_DIR }}/protoc-gen-go
+   TOOL_PROTO_SRC: google.golang.org/protobuf/cmd/protoc-gen-go@latest
+   TOOL_PROTO: ./{{ .TOOL_BIN_DIR }}/protoc-gen-go
 
-  TOOL_GRPC_SRC: google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-  TOOL_GRPC: ./{{ .TOOL_BIN_DIR }}/protoc-gen-go-grpc
+   TOOL_GRPC_SRC: google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+   TOOL_GRPC: ./{{ .TOOL_BIN_DIR }}/protoc-gen-go-grpc
 
-  TOOL_MOCKS_SRC: github.com/vektra/mockery/v2@latest
-  TOOL_MOCKS: ./{{ .TOOL_BIN_DIR }}/mockery
+   TOOL_MOCKS_SRC: github.com/vektra/mockery/v2@latest
+   TOOL_MOCKS: ./{{ .TOOL_BIN_DIR }}/mockery
 
-  TOOL_GOOSE_SRC: github.com/pressly/goose/v3/cmd/goose@latest
-  TOOL_GOOSE: ./{{ .TOOL_BIN_DIR }}/goose
+   TOOL_GOOSE_SRC: github.com/pressly/goose/v3/cmd/goose@latest
+   TOOL_GOOSE: ./{{ .TOOL_BIN_DIR }}/goose
 
-  PROTO_SRC: ./schemas/proto
-
+   PROTO_SRC: ./schemas/proto
 
 tasks:
-  default:
-    cmds:
-     - task: build
+   default:
+      cmds:
+         - task: build
 
-  build:
-    deps: [tools:install]
-    cmds:
-      - task: lint
-      - task: fmt
-      - task: logs:clear
-      - task: docker:up
+   build:
+      deps: [tools:install]
+      cmds:
+         - task: lint
+         - task: fmt
+         - task: logs:clear
+         - task: docker:up
 
-  docker:up:
-    desc: Run docker services
-    cmds:
-      - echo '>>> Docker compose up'
-      - docker compose {{ .DOCKER_DIR_SETUP }} up --build --force-recreate
+   docker:up:
+      desc: Run docker services
+      cmds:
+         - echo '>>> Docker compose up'
+         - docker compose {{ .DOCKER_DIR_SETUP }} up --build --force-recreate
 
-  docker:down:
-    desc: Shutdown docker services
-    cmds:
-      - echo '>>> Docker compose down'
-      - docker compose {{ .DOCKER_DIR_SETUP }}  down --remove-orphans --volumes
+   docker:down:
+      desc: Shutdown docker services
+      cmds:
+         - echo '>>> Docker compose down'
+         - docker compose {{ .DOCKER_DIR_SETUP }}  down --remove-orphans --volumes
 
-  docker:clean:
-    desc: Free docker resources
-    cmds:
-      - docker image prune --all && docker volume prune --all && docker container prune && docker system prune
+   docker:clean:
+      desc: Free docker resources
+      cmds:
+         - docker image prune --all && docker volume prune --all && docker container prune && docker system prune
 
-  logs:dump:
-    desc: Dump docker logs
-    cmds:
-      - echo '>>> Docker compose logs'
-      - docker compose {{ .DOCKER_DIR_SETUP }} logs &> .log
+   logs:dump:
+      desc: Dump docker logs
+      cmds:
+         - echo '>>> Docker compose logs'
+         - docker compose {{ .DOCKER_DIR_SETUP }} logs &> .log
 
-  logs:clear:
-    desc: Clear logs file
-    cmds:
-      - echo '>>> Clear logs'
-      - echo '' > .log
+   logs:clear:
+      desc: Clear logs file
+      cmds:
+         - echo '>>> Clear logs'
+         - echo '' > .log
 
-  postgres:dump:
-    desc: Dump Postgres data
-    cmds:
-      - echo '>>> Dump Postgres'
-      - "docker exec -i {{.PG_CONT_NAME}} /bin/sh -c 
-        'PGPASSWORD={{.PG_PASSWORD}} pg_dump --username {{.PG_USER}} {{.PG_DATABASE}}'
-        > ./db/create_tables.sql"
+   postgres:dump:
+      desc: Dump Postgres data
+      cmds:
+         - echo '>>> Dump Postgres'
+         - "docker exec -i {{.PG_CONT_NAME}} /bin/sh -c
+           'PGPASSWORD={{.PG_PASSWORD}} pg_dump --username {{.PG_USER}} {{.PG_DATABASE}}'
+           > ./db/create_tables.sql"
 
-  tools:install:
-    env:
-      GOBIN: '{{ .TASKFILE_DIR }}/{{ .TOOL_BIN_DIR }}'
-    desc: Run tools install
-    cmds:
-      - echo '>>> Run install tools'
-      - mkdir -p {{ .TOOL_BIN_DIR }}
-      - go install {{ .TOOL_LINT_SRC }}
-      - go install {{ .TOOL_GO_IMPORTS_SRC }}
-      - go install {{ .TOOL_GOFUMPT_SRC }}
-      - go install {{ .TOOL_PROTO_SRC }}
-      - go install {{ .TOOL_GRPC_SRC }}
-      - go install {{ .TOOL_MOCKS_SRC }}
-      - go install {{ .TOOL_GOOSE_SRC }}
-    status:
-      - test -f {{ .TOOL_LINT }}
-      - test -f {{ .TOOL_GO_IMPORTS }}
-      - test -f {{ .TOOL_GOFUMPT }}
-      - test -f {{ .TOOL_PROTO }}
-      - test -f {{ .TOOL_GRPC }}
-      - test -f {{ .TOOL_MOCKS }}
-      - test -f {{ .TOOL_GOOSE }}
+   tools:install:
+      env:
+         GOBIN: "{{ .TASKFILE_DIR }}/{{ .TOOL_BIN_DIR }}"
+      desc: Run tools install
+      cmds:
+         - echo '>>> Run install tools'
+         - mkdir -p {{ .TOOL_BIN_DIR }}
+         - go install {{ .TOOL_LINT_SRC }}
+         - go install {{ .TOOL_GO_IMPORTS_SRC }}
+         - go install {{ .TOOL_GOFUMPT_SRC }}
+         - go install {{ .TOOL_PROTO_SRC }}
+         - go install {{ .TOOL_GRPC_SRC }}
+         - go install {{ .TOOL_MOCKS_SRC }}
+         - go install {{ .TOOL_GOOSE_SRC }}
+      status:
+         - test -f {{ .TOOL_LINT }}
+         - test -f {{ .TOOL_GO_IMPORTS }}
+         - test -f {{ .TOOL_GOFUMPT }}
+         - test -f {{ .TOOL_PROTO }}
+         - test -f {{ .TOOL_GRPC }}
+         - test -f {{ .TOOL_MOCKS }}
+         - test -f {{ .TOOL_GOOSE }}
 
-  tools:clear:
-    desc: Remove installed tools binaries
-    cmds:
-      - echo '>>> Run clear tools'
-      - rm -rf {{ .TOOL_BIN_DIR }}
+   tools:clear:
+      desc: Remove installed tools binaries
+      cmds:
+         - echo '>>> Run clear tools'
+         - rm -rf {{ .TOOL_BIN_DIR }}
 
-  go:tidy:
-    desc: Run go mod tidy
-    run: once
-    cmds:
-      - echo '>>> Run go get ./..'
-      - go get -x ./...
-      - echo '>>> Run go tidy'
-      - go mod tidy
+   go:tidy:
+      desc: Run go mod tidy
+      run: once
+      cmds:
+         - echo '>>> Run go get ./..'
+         - go get -x ./...
+         - echo '>>> Run go tidy'
+         - go mod tidy
 
-  lint:
-    desc: Run static analysis
-    cmds:
-      - echo '>>> Run lint'
-      - "{{ .TOOL_LINT }} run --fix"
+   lint:
+      desc: Run static analysis
+      cmds:
+         - echo '>>> Run lint'
+         - "{{ .TOOL_LINT }} run --fix"
 
-  migrate:up:
-    desc: Apply all available migrations
-    cmds:
-      - echo '>>> Migrate up'
-      - "{{ .TOOL_GOOSE }} -dir {{ .DB_MIGRATIONS_DIR }} up"
+   migrate:up:
+      desc: Apply all available migrations
+      cmds:
+         - echo '>>> Migrate up'
+         - "{{ .TOOL_GOOSE }} -dir {{ .DB_MIGRATIONS_DIR }} up"
 
-  migrate:down:
-    desc: Roll back a single migration from the current version
-    cmds:
-      - echo '>>> Migrate down'
-      - "{{ .TOOL_GOOSE }} -dir {{ .DB_MIGRATIONS_DIR }} down"
+   migrate:down:
+      desc: Roll back a single migration from the current version
+      cmds:
+         - echo '>>> Migrate down'
+         - "{{ .TOOL_GOOSE }} -dir {{ .DB_MIGRATIONS_DIR }} down"
 
-  generate:
-    desc: Generate code
-    cmds:
-      - task: generate:go
-#      - task: generate:proto
-      - task: fmt
+   generate:
+      desc: Generate code
+      cmds:
+         - task: generate:go
+         #      - task: generate:proto
+         - task: fmt
 
-  generate:go:
-    desc: Generate go
-    env:
-      SEARCH_BIN_PATH:
-        sh: "echo `pwd`/{{ .TOOL_BIN_DIR }}:$PATH"
-    cmds:
-      - echo ">>> Go generate ./..."
-      - PATH=$SEARCH_BIN_PATH go generate ./...
+   generate:go:
+      desc: Generate go
+      env:
+         SEARCH_BIN_PATH:
+            sh: "echo `pwd`/{{ .TOOL_BIN_DIR }}:$PATH"
+      cmds:
+         - echo ">>> Go generate ./..."
+         - PATH=$SEARCH_BIN_PATH go generate ./...
 
-#  generate:proto:
-#    desc: Generate protobuf
-#    env:
-#      SEARCH_BIN_PATH:
-#        sh: "echo `pwd`/{{ .TOOL_BIN_DIR }}:$PATH"
-#    cmds:
-#      - echo ">>> proto"
-#      - "PATH=$SEARCH_BIN_PATH {{ .PROTOC }}
-#           --proto_path=. \
-#           --go_out=. \
-#           --go_opt=module=studentgit.kata.academy/movie-recommendation-platform/telegram-bot-service \
-#           --go-grpc_out=. \
-#           --go-grpc_opt=module=studentgit.kata.academy/movie-recommendation-platform/telegram-bot-service \
-#           {{ .PROTO_SRC }}/grpc/*.proto"
+   #  generate:proto:
+   #    desc: Generate protobuf
+   #    env:
+   #      SEARCH_BIN_PATH:
+   #        sh: "echo `pwd`/{{ .TOOL_BIN_DIR }}:$PATH"
+   #    cmds:
+   #      - echo ">>> proto"
+   #      - "PATH=$SEARCH_BIN_PATH {{ .PROTOC }}
+   #           --proto_path=. \
+   #           --go_out=. \
+   #           --go_opt=module=go-boilerplate \
+   #           --go-grpc_out=. \
+   #           --go-grpc_opt=module=go-boilerplate \
+   #           {{ .PROTO_SRC }}/grpc/*.proto"
 
-  fmt:
-    desc: Safe formatting codebase
-    cmds:
-      - echo ">>> Run Code Formatter"
-      - go fmt $(go list ./... | grep -v /vendor)
-      - "{{ .TOOL_GOFUMPT }} -l -w ."
-      - "{{ .TOOL_GO_IMPORTS }} -w ."
-
+   fmt:
+      desc: Safe formatting codebase
+      cmds:
+         - echo ">>> Run Code Formatter"
+         - go fmt $(go list ./... | grep -v /vendor)
+         - "{{ .TOOL_GOFUMPT }} -l -w ."
+         - "{{ .TOOL_GO_IMPORTS }} -w ."

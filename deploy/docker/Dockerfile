@@ -4,8 +4,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN go mod init studentgit.kata.academy/movie-recommendation-platform/telegram-bot-service \
-    && go mod tidy
+RUN go mod init go-boilerplate && go mod tidy
 
 RUN go build -o ./main ./cmd/app
 
