@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"go-boilerplate/internal/app"
+	"github.com/wanomir/go-boilerplate/internal/app"
 )
 
 func main() {

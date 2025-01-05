@@ -10,13 +10,13 @@ import (
 	"runtime/debug"
 	"time"
 
-	httpv1 "go-boilerplate/internal/controller/http_v1"
-	tg "go-boilerplate/internal/entity/telegram"
-	"go-boilerplate/internal/infrastructure/repository"
+	httpv1 "github.com/wanomir/go-boilerplate/internal/controller/http_v1"
+	tg "github.com/wanomir/go-boilerplate/internal/entity/telegram"
+	"github.com/wanomir/go-boilerplate/internal/infrastructure/repository"
 
 	"go.uber.org/zap"
 
-	"go-boilerplate/pkg/psql"
+	"github.com/wanomir/go-boilerplate/pkg/psql"
 
 	"github.com/wanomir/d"
 	"github.com/wanomir/e"

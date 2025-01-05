@@ -1,5 +1,6 @@
 services:
   app:
+    image: ${TAG}
     build:
       context: .
       dockerfile: ./deploy/docker/Dockerfile.darwin

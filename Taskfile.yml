@@ -4,10 +4,11 @@ silent: true
 dotenv: [".env"]
 
 vars:
+  TAG: "{{ .TAG }}"
   DOCKER_DIR_SETUP: --file ./deploy/docker/docker-compose-{{OS}}.yml --project-directory ./
 
-  SSL_CERT_PATH: $SSL_CERT_PATH
-  SSL_KEY_PATH: $SSL_KEY_PATH
+  SSL_CERT_PATH: "{{ .SSL_CERT_PATH }}"
+  SSL_KEY_PATH: "{{ .SSL_KEY_PATH }}"
 
   PG_CONT_NAME: kt-bot-postgres-1
   DB_MIGRATIONS_DIR: ./db/migrations
@@ -74,6 +75,8 @@ tasks:
     cmds:
       - echo '>>> Docker compose up'
       - docker compose {{ .DOCKER_DIR_SETUP }} up --build --force-recreate
+    env:
+      TAG: "{{ .TAG }}"
 
   docker:down:
     desc: Shutdown docker services
