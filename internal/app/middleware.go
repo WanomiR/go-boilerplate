@@ -6,11 +6,22 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
 
-func (a *App) ZapLogger(next http.Handler) http.Handler {
+var totalRequestsCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+	Namespace: "goboilerplate",
+	Name:      "total_requests_count",
+	Help:      "Total number of requests received on all API's",
+}, []string{"type"})
+
+func init() {
+	prometheus.MustRegister(totalRequestsCount)
+}
+
+func (a *App) zapLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		next.ServeHTTP(w, r)
 		a.logger.Info("new request",
@@ -21,7 +32,7 @@ func (a *App) ZapLogger(next http.Handler) http.Handler {
 	})
 }
 
-func (a *App) RateLimiter(next http.Handler) http.Handler {
+func (a *App) rateLimiter(next http.Handler) http.Handler {
 	type client struct {
 		limiter  *rate.Limiter
 		lastSeen time.Time
@@ -70,5 +81,12 @@ func (a *App) RateLimiter(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r)
+	})
+}
+
+func (a *App) requestsCounter(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r)
+		totalRequestsCount.With(prometheus.Labels{"type": "requestst"}).Inc()
 	})
 }

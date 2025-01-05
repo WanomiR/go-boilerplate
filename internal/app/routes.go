@@ -13,8 +13,9 @@ func (a *App) routes() *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Recoverer)
-	r.Use(a.ZapLogger)
-	r.Use(a.RateLimiter)
+	r.Use(a.zapLogger)
+	r.Use(a.rateLimiter)
+	r.Use(a.requestsCounter)
 
 	r.Get("/hello", a.http.HelloWorld)
 
