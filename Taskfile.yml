@@ -36,6 +36,9 @@ vars:
   TOOL_GOOSE_SRC: github.com/pressly/goose/v3/cmd/goose@latest
   TOOL_GOOSE: ./{{ .TOOL_BIN_DIR }}/goose
 
+  TOOL_SWAGGO_SRC: github.com/swaggo/swag/cmd/swag@latest
+  TOOL_SWAGGO: ./{{ .TOOL_BIN_DIR }}/swag
+
   PROTO_SRC: ./schemas/proto
 
 tasks:
@@ -49,6 +52,7 @@ tasks:
       - task: lint
       - task: fmt
       - task: logs:clear
+      - task: swag:init
       - task: docker:up
 
   build:bin:
@@ -69,6 +73,12 @@ tasks:
       - echo '>>> Copy SSL certificates'
       - cp {{ .SSL_CERT_PATH }} ./server.crt
       - cp {{ .SSL_KEY_PATH }} ./server.key
+
+  swag:init:
+    desc: Generate swagger docks
+    cmds:
+      - echo '>>> Generate Swagger docs'
+      - swag init --parseDependency -g ./cmd/app/main.go
 
   docker:up:
     desc: Run docker services

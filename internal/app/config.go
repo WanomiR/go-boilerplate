@@ -12,7 +12,7 @@ type (
 	}
 
 	Target struct {
-		Addr string `env:"TARGET_ADDR" env-default:":8888"`
+		Addr string `env:"TARGET_ADDR" env-default:"0.0.0.0:8888"`
 	}
 
 	Log struct {
@@ -21,7 +21,7 @@ type (
 	}
 
 	Debug struct {
-		ServerAddr string `env:"DEBUG_SERVER_ADDR" env-default:":8080"`
+		ServerAddr string `env:"DEBUG_SERVER_ADDR" env-default:"0.0.0.0:8080"`
 	}
 
 	TG struct {
