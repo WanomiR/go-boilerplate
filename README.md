@@ -1,9 +1,9 @@
-# Telegram bot service
+# Go project
 
 ## Instructions
 - To install tools, lint, format, build, and run the app use:
     ```bash
-    task build
+    task run
     # or just
     task
     ```
