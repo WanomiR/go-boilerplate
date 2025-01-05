@@ -4,176 +4,205 @@ silent: true
 dotenv: [".env"]
 
 vars:
-   PG_CONT_NAME: go-boilerplate-postgres-1
-   DOCKER_DIR_SETUP: --file deploy/docker/docker-compose.yml --project-directory ./
-   DB_MIGRATIONS_DIR: ./db/migrations
+  DOCKER_DIR_SETUP: --file ./deploy/docker/docker-compose-{{OS}}.yml --project-directory ./
 
-   TOOL_BIN_DIR: ./bin/tools
+  SSL_CERT_PATH: $SSL_CERT_PATH
+  SSL_KEY_PATH: $SSL_KEY_PATH
 
-   TOOL_LINT_SRC: github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-   TOOL_LINT: ./{{ .TOOL_BIN_DIR }}/golangci-lint
+  PG_CONT_NAME: kt-bot-postgres-1
+  DB_MIGRATIONS_DIR: ./db/migrations
 
-   TOOL_GO_IMPORTS_SRC: golang.org/x/tools/cmd/goimports@latest
-   TOOL_GO_IMPORTS: ./{{ .TOOL_BIN_DIR }}/goimports
+  TOOL_BIN_DIR: ./bin/tools
 
-   TOOL_GOFUMPT_SRC: mvdan.cc/gofumpt@latest
-   TOOL_GOFUMPT: ./{{ .TOOL_BIN_DIR }}/gofumpt
+  TOOL_LINT_SRC: github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+  TOOL_LINT: ./{{ .TOOL_BIN_DIR }}/golangci-lint
 
-   TOOL_PROTO_SRC: google.golang.org/protobuf/cmd/protoc-gen-go@latest
-   TOOL_PROTO: ./{{ .TOOL_BIN_DIR }}/protoc-gen-go
+  TOOL_GO_IMPORTS_SRC: golang.org/x/tools/cmd/goimports@latest
+  TOOL_GO_IMPORTS: ./{{ .TOOL_BIN_DIR }}/goimports
 
-   TOOL_GRPC_SRC: google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-   TOOL_GRPC: ./{{ .TOOL_BIN_DIR }}/protoc-gen-go-grpc
+  TOOL_GOFUMPT_SRC: mvdan.cc/gofumpt@latest
+  TOOL_GOFUMPT: ./{{ .TOOL_BIN_DIR }}/gofumpt
 
-   TOOL_MOCKS_SRC: github.com/vektra/mockery/v2@latest
-   TOOL_MOCKS: ./{{ .TOOL_BIN_DIR }}/mockery
+  TOOL_PROTO_SRC: google.golang.org/protobuf/cmd/protoc-gen-go@latest
+  TOOL_PROTO: ./{{ .TOOL_BIN_DIR }}/protoc-gen-go
 
-   TOOL_GOOSE_SRC: github.com/pressly/goose/v3/cmd/goose@latest
-   TOOL_GOOSE: ./{{ .TOOL_BIN_DIR }}/goose
+  TOOL_GRPC_SRC: google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+  TOOL_GRPC: ./{{ .TOOL_BIN_DIR }}/protoc-gen-go-grpc
 
-   PROTO_SRC: ./schemas/proto
+  TOOL_MOCKS_SRC: github.com/vektra/mockery/v2@latest
+  TOOL_MOCKS: ./{{ .TOOL_BIN_DIR }}/mockery
+
+  TOOL_GOOSE_SRC: github.com/pressly/goose/v3/cmd/goose@latest
+  TOOL_GOOSE: ./{{ .TOOL_BIN_DIR }}/goose
+
+  PROTO_SRC: ./schemas/proto
 
 tasks:
-   default:
-      cmds:
-         - task: build
+  default:
+    cmds:
+      - task: run
 
-   build:
-      deps: [tools:install]
-      cmds:
-         - task: lint
-         - task: fmt
-         - task: logs:clear
-         - task: docker:up
+  run:
+    deps: [tools:install]
+    cmds:
+      - task: lint
+      - task: fmt
+      - task: logs:clear
+      - task: docker:up
 
-   docker:up:
-      desc: Run docker services
-      cmds:
-         - echo '>>> Docker compose up'
-         - docker compose {{ .DOCKER_DIR_SETUP }} up --build --force-recreate
+  build:bin:
+    desc: Build binary executable
+    cmds:
+      - echo '>>> Build binary for current OS'
+      - go build -o main ./cmd/app
 
-   docker:down:
-      desc: Shutdown docker services
-      cmds:
-         - echo '>>> Docker compose down'
-         - docker compose {{ .DOCKER_DIR_SETUP }}  down --remove-orphans --volumes
+  build:linux86:
+    desc: Build binary executable for Linux 64_86
+    cmds:
+      - echo '>>> Build binary for Linux 64_86'
+      - GOOS=linux GOARCH=amd64 go build -o main ./cmd/app
 
-   docker:clean:
-      desc: Free docker resources
-      cmds:
-         - docker image prune --all && docker volume prune --all && docker container prune && docker system prune
+  ssl:copy:
+    desc: Copy SSL certificates
+    cmds:
+      - echo '>>> Copy SSL certificates'
+      - cp {{ .SSL_CERT_PATH }} ./server.crt
+      - cp {{ .SSL_KEY_PATH }} ./server.key
 
-   logs:dump:
-      desc: Dump docker logs
-      cmds:
-         - echo '>>> Docker compose logs'
-         - docker compose {{ .DOCKER_DIR_SETUP }} logs &> .log
+  docker:up:
+    desc: Run docker services
+    cmds:
+      - echo '>>> Docker compose up'
+      - docker compose {{ .DOCKER_DIR_SETUP }} up --build --force-recreate
 
-   logs:clear:
-      desc: Clear logs file
-      cmds:
-         - echo '>>> Clear logs'
-         - echo '' > .log
+  docker:down:
+    desc: Shutdown docker services
+    cmds:
+      - echo '>>> Docker compose down'
+      - docker compose {{ .DOCKER_DIR_SETUP }}  down --remove-orphans --volumes
 
-   postgres:dump:
-      desc: Dump Postgres data
-      cmds:
-         - echo '>>> Dump Postgres'
-         - "docker exec -i {{.PG_CONT_NAME}} /bin/sh -c
-           'PGPASSWORD={{.PG_PASSWORD}} pg_dump --username {{.PG_USER}} {{.PG_DATABASE}}'
-           > ./db/create_tables.sql"
+  docker:clean:
+    desc: Free docker resources
+    cmds:
+      - docker image prune --all && docker volume prune --all && docker container prune && docker system prune
 
-   tools:install:
-      env:
-         GOBIN: "{{ .TASKFILE_DIR }}/{{ .TOOL_BIN_DIR }}"
-      desc: Run tools install
-      cmds:
-         - echo '>>> Run install tools'
-         - mkdir -p {{ .TOOL_BIN_DIR }}
-         - go install {{ .TOOL_LINT_SRC }}
-         - go install {{ .TOOL_GO_IMPORTS_SRC }}
-         - go install {{ .TOOL_GOFUMPT_SRC }}
-         - go install {{ .TOOL_PROTO_SRC }}
-         - go install {{ .TOOL_GRPC_SRC }}
-         - go install {{ .TOOL_MOCKS_SRC }}
-         - go install {{ .TOOL_GOOSE_SRC }}
-      status:
-         - test -f {{ .TOOL_LINT }}
-         - test -f {{ .TOOL_GO_IMPORTS }}
-         - test -f {{ .TOOL_GOFUMPT }}
-         - test -f {{ .TOOL_PROTO }}
-         - test -f {{ .TOOL_GRPC }}
-         - test -f {{ .TOOL_MOCKS }}
-         - test -f {{ .TOOL_GOOSE }}
+  logs:dump:
+    desc: Dump docker logs
+    cmds:
+      - echo '>>> Docker compose logs'
+      - docker compose {{ .DOCKER_DIR_SETUP }} logs &> .log
 
-   tools:clear:
-      desc: Remove installed tools binaries
-      cmds:
-         - echo '>>> Run clear tools'
-         - rm -rf {{ .TOOL_BIN_DIR }}
+  logs:clear:
+    desc: Clear logs file
+    cmds:
+      - echo '>>> Clear logs'
+      - echo '' > .log
 
-   go:tidy:
-      desc: Run go mod tidy
-      run: once
-      cmds:
-         - echo '>>> Run go get ./..'
-         - go get -x ./...
-         - echo '>>> Run go tidy'
-         - go mod tidy
+  postgres:dump:
+    desc: Dump Postgres data
+    cmds:
+      - echo '>>> Dump Postgres'
+      - "docker exec -i {{.PG_CONT_NAME}} /bin/sh -c
+        'PGPASSWORD={{.PG_PASSWORD}} pg_dump --username {{.PG_USER}} {{.PG_DATABASE}}'
+        > ./db/create_tables.sql"
 
-   lint:
-      desc: Run static analysis
-      cmds:
-         - echo '>>> Run lint'
-         - "{{ .TOOL_LINT }} run --fix"
+  tools:install:
+    env:
+      GOBIN: "{{ .TASKFILE_DIR }}/{{ .TOOL_BIN_DIR }}"
+    desc: Run tools install
+    cmds:
+      - echo '>>> Run install tools'
+      - mkdir -p {{ .TOOL_BIN_DIR }}
+      - go install {{ .TOOL_LINT_SRC }}
+      - go install {{ .TOOL_GO_IMPORTS_SRC }}
+      - go install {{ .TOOL_GOFUMPT_SRC }}
+      - go install {{ .TOOL_PROTO_SRC }}
+      - go install {{ .TOOL_GRPC_SRC }}
+      - go install {{ .TOOL_MOCKS_SRC }}
+      - go install {{ .TOOL_GOOSE_SRC }}
+    status:
+      - test -f {{ .TOOL_LINT }}
+      - test -f {{ .TOOL_GO_IMPORTS }}
+      - test -f {{ .TOOL_GOFUMPT }}
+      - test -f {{ .TOOL_PROTO }}
+      - test -f {{ .TOOL_GRPC }}
+      - test -f {{ .TOOL_MOCKS }}
+      - test -f {{ .TOOL_GOOSE }}
 
-   migrate:up:
-      desc: Apply all available migrations
-      cmds:
-         - echo '>>> Migrate up'
-         - "{{ .TOOL_GOOSE }} -dir {{ .DB_MIGRATIONS_DIR }} up"
+  tools:clear:
+    desc: Remove installed tools binaries
+    cmds:
+      - echo '>>> Run clear tools'
+      - rm -rf {{ .TOOL_BIN_DIR }}
 
-   migrate:down:
-      desc: Roll back a single migration from the current version
-      cmds:
-         - echo '>>> Migrate down'
-         - "{{ .TOOL_GOOSE }} -dir {{ .DB_MIGRATIONS_DIR }} down"
+  go:tidy:
+    desc: Run go mod tidy
+    run: once
+    cmds:
+      - echo '>>> Run go get ./..'
+      - go get -x ./...
+      - echo '>>> Run go tidy'
+      - go mod tidy
 
-   generate:
-      desc: Generate code
-      cmds:
-         - task: generate:go
-         #      - task: generate:proto
-         - task: fmt
+  lint:
+    desc: Run static analysis
+    cmds:
+      - echo '>>> Run lint'
+      - "{{ .TOOL_LINT }} run --fix"
 
-   generate:go:
-      desc: Generate go
-      env:
-         SEARCH_BIN_PATH:
-            sh: "echo `pwd`/{{ .TOOL_BIN_DIR }}:$PATH"
-      cmds:
-         - echo ">>> Go generate ./..."
-         - PATH=$SEARCH_BIN_PATH go generate ./...
+  migrate:up:
+    desc: Apply all available migrations
+    cmds:
+      - echo '>>> Migrate up'
+      - "{{ .TOOL_GOOSE }} -dir {{ .DB_MIGRATIONS_DIR }} up"
 
-   #  generate:proto:
-   #    desc: Generate protobuf
-   #    env:
-   #      SEARCH_BIN_PATH:
-   #        sh: "echo `pwd`/{{ .TOOL_BIN_DIR }}:$PATH"
-   #    cmds:
-   #      - echo ">>> proto"
-   #      - "PATH=$SEARCH_BIN_PATH {{ .PROTOC }}
-   #           --proto_path=. \
-   #           --go_out=. \
-   #           --go_opt=module=go-boilerplate \
-   #           --go-grpc_out=. \
-   #           --go-grpc_opt=module=go-boilerplate \
-   #           {{ .PROTO_SRC }}/grpc/*.proto"
+  migrate:down:
+    desc: Roll back a single migration from the current version
+    cmds:
+      - echo '>>> Migrate down'
+      - "{{ .TOOL_GOOSE }} -dir {{ .DB_MIGRATIONS_DIR }} down"
 
-   fmt:
-      desc: Safe formatting codebase
-      cmds:
-         - echo ">>> Run Code Formatter"
-         - go fmt $(go list ./... | grep -v /vendor)
-         - "{{ .TOOL_GOFUMPT }} -l -w ."
-         - "{{ .TOOL_GO_IMPORTS }} -w ."
+  generate:
+    desc: Generate code
+    cmds:
+      - task: generate:go
+      #      - task: generate:proto
+      - task: fmt
+
+  generate:go:
+    desc: Generate go
+    env:
+      SEARCH_BIN_PATH:
+        sh: "echo `pwd`/{{ .TOOL_BIN_DIR }}:$PATH"
+    cmds:
+      - echo ">>> Go generate ./..."
+      - PATH=$SEARCH_BIN_PATH go generate ./...
+
+  #  generate:proto:
+  #    desc: Generate protobuf
+  #    env:
+  #      SEARCH_BIN_PATH:
+  #        sh: "echo `pwd`/{{ .TOOL_BIN_DIR }}:$PATH"
+  #    cmds:
+  #      - echo ">>> proto"
+  #      - "PATH=$SEARCH_BIN_PATH {{ .PROTOC }}
+  #           --proto_path=. \
+  #           --go_out=. \
+  #           --go_opt=module=studentgit.kata.academy/movie-recommendation-platform/kt-bot \
+  #           --go-grpc_out=. \
+  #           --go-grpc_opt=module=studentgit.kata.academy/movie-recommendation-platform/kt-bot \
+  #           {{ .PROTO_SRC }}/grpc/*.proto"
+
+  fmt:
+    desc: Safe formatting codebase
+    cmds:
+      - echo ">>> Run Code Formatter"
+      - go fmt $(go list ./... | grep -v /vendor)
+      - "{{ .TOOL_GOFUMPT }} -l -w ."
+      - "{{ .TOOL_GO_IMPORTS }} -w ."
+
+  # copy:options:
+  #   desc: Copy options
+  #   cmds:
+  #     - echo '>>> Copy options file from remote server'
+  #     - scp root@$SERVER_IP:/home/wanomir/kt-bot/app_data/options.json ./app_data/

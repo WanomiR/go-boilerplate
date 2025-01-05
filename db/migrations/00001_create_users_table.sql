@@ -1,13 +1,10 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    telegram_id INTEGER,
-    telegram_chat_id INTEGER
-);
--- +goose StatementEnd
+CREATE TABLE IF NOT EXISTS db (id SERIAL PRIMARY KEY);
 
+-- +goose StatementEnd
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE users;
+DROP TABLE db;
+
 -- +goose StatementEnd

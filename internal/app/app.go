@@ -2,21 +2,26 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"time"
 
+	httpv1 "go-boilerplate/internal/controller/http_v1"
+	tg "go-boilerplate/internal/entity/telegram"
 	"go-boilerplate/internal/infrastructure/repository"
 
 	"go.uber.org/zap"
 
 	"go-boilerplate/pkg/psql"
 
-	"go-boilerplate/pkg/e"
-	"go-boilerplate/pkg/logger"
+	"github.com/wanomir/d"
+	"github.com/wanomir/e"
+	"github.com/wanomir/l"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
@@ -26,11 +31,15 @@ const (
 )
 
 type App struct {
-	config  *Config
+	config *Config
+	logger *zap.Logger
+
 	ctx     context.Context
 	errChan chan error
-	logger  *zap.Logger
-	bot     *tgbotapi.BotAPI
+
+	server *http.Server
+	tg     *tg.Telegram
+	http   *httpv1.HttpController
 }
 
 func NewApp() (*App, error) {
@@ -50,32 +59,17 @@ func (a *App) Run() (exitCode int) {
 	ctx, stop := signal.NotifyContext(a.ctx, os.Interrupt, os.Kill)
 	defer stop()
 
-	// for now, just mirror incoming messages to make sure that the bot works
+	// run telegram
+	go a.tg.Run(ctx)
+
+	// listen for incoming api requests
 	go func() {
-		u := tgbotapi.NewUpdate(0)
-		u.Timeout = 60
-		// TODO: move updates chanel creation outside running goroutine
-		//		 so it will be placed next to `StopReceivingUpdates()`
-		updates := a.bot.GetUpdatesChan(u)
-
-		for {
-			select {
-			case update := <-updates:
-				if update.Message != nil { // If we got a message
-					a.logger.Info(fmt.Sprintf("[%s] %s", update.Message.From.UserName, update.Message.Text))
-
-					msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-					msg.ReplyToMessageID = update.Message.MessageID
-
-					_, _ = a.bot.Send(msg)
-				}
-			case <-ctx.Done():
-				a.logger.Info("telegram shutdown")
-				return
-			}
+		if err := a.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			a.errChan <- err
 		}
 	}()
-	defer a.bot.StopReceivingUpdates()
+
+	go d.Run(a.config.Debug.ServerAddr)
 
 	select {
 	case err = <-a.errChan:
@@ -97,8 +91,8 @@ func (a *App) init() (err error) {
 	a.ctx = context.Background()
 	a.errChan = make(chan error)
 
-	// TODO: log events in the usecase layer
-	a.logger = logger.NewLogger(a.config.Log.Level)
+	l.BuildLogger(a.config.Log.Level)
+	a.logger = l.Logger()
 
 	// database
 	pool, err := psql.Connect(a.ctx,
@@ -118,10 +112,17 @@ func (a *App) init() (err error) {
 	_ = repository.NewPostgresDB(pool)
 
 	// telegram service
-	if a.bot, err = tgbotapi.NewBotAPI(a.config.Token); err != nil {
+	if a.tg, err = tg.NewTelegram(a.config.TG.Token, a.logger); err != nil {
 		return e.Wrap("failed to init telegram", err)
 	}
-	a.logger.Info("authorized telegram service", zap.String("account", a.bot.Self.UserName))
+
+	// http server
+	a.server = &http.Server{
+		Addr:         a.config.Target.Addr,
+		Handler:      a.routes(),
+		ReadTimeout:  1 * time.Second,
+		WriteTimeout: 15 * time.Second,
+	}
 
 	return nil
 }

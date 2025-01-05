@@ -4,28 +4,38 @@ import "github.com/ilyakaznacheev/cleanenv"
 
 type (
 	Config struct {
+		Target
 		Log
+		Debug
 		TG
 		PG
 	}
 
+	Target struct {
+		Addr string `env:"TARGET_ADDR" env-default:":8888"`
+	}
+
 	Log struct {
 		// TODO: instead of required add default log level
-		Level string `env-required:"true" env:"LOG_LEVEL"`
+		Level string `env:"LOG_LEVEL" env-default:"DEBUG"`
+	}
+
+	Debug struct {
+		ServerAddr string `env:"DEBUG_SERVER_ADDR" env-default:":8080"`
 	}
 
 	TG struct {
-		Token string `env-required:"true" env:"TG_TOKEN"`
+		Token string `env:"TG_TOKEN" env-default:"7769410503:AAEmqePfLePAEU7OCjI38x75mnb4M-7bNGs"`
 	}
 
 	PG struct {
-		Host          string `env-required:"true" env:"PG_HOST"`
-		Port          string `env-required:"true" env:"PG_PORT"`
-		User          string `env-required:"true" env:"PG_USER"`
-		Password      string `env-required:"true" env:"PG_PASSWORD"`
-		UserAdmin     string `env-required:"true" env:"PG_USER_ADMIN"`
-		PasswordAdmin string `env-required:"true" env:"PG_PASSWORD_ADMIN"`
-		Database      string `env-required:"true" env:"PG_DATABASE"`
+		Host          string `env:"PG_HOST" env-default:"postgres"`
+		Port          string `env:"PG_PORT" env-default:"5432"`
+		User          string `env:"PG_USER" env-default:"user"`
+		Password      string `env:"PG_PASSWORD" env-default:"password"`
+		UserAdmin     string `env:"PG_USER_ADMIN" env-default:"user"`
+		PasswordAdmin string `env:"PG_PASSWORD_ADMIN" env-default:"password"`
+		Database      string `env:"PG_DATABASE" env-default:"db"`
 	}
 )
 

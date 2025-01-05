@@ -2,9 +2,10 @@ services:
   app:
     build:
       context: .
-      dockerfile: ./deploy/docker/Dockerfile
+      dockerfile: ./deploy/docker/Dockerfile.darwin
     ports:
       - 8888:8888
+      - 8080:8080
     env_file: .env
     restart: on-failure
     depends_on:
