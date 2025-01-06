@@ -16,7 +16,6 @@ type (
 	}
 
 	Log struct {
-		// TODO: instead of required add default log level
 		Level string `env:"LOG_LEVEL" env-default:"DEBUG"`
 	}
 
