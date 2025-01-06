@@ -42,7 +42,7 @@ func (a *App) rateLimiter(next http.Handler) http.Handler {
 		clients = make(map[string]*client)
 	)
 
-	// Очистка неактивных клиентов (клиентов, которые встречались более чем 1 час назад) каждую минуту
+	// clear inactive clients
 	go func() {
 		for {
 			time.Sleep(time.Minute)
@@ -57,7 +57,7 @@ func (a *App) rateLimiter(next http.Handler) http.Handler {
 	}()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Получаем IP адрес клиента
+		// get client's ip address
 		ip, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
