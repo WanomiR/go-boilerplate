@@ -58,7 +58,7 @@ tasks:
   build:bin:
     desc: Build binary executable
     cmds:
-      - echo '>>> Build binary for current OS'
+      - echo '>>> Build binary for current {{OS}}'
       - go build -o main ./cmd/app
 
   build:linux86:
