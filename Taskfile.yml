@@ -78,7 +78,7 @@ tasks:
     desc: Generate swagger docks
     cmds:
       - echo '>>> Generate Swagger docs'
-      - swag init --parseDependency -g ./cmd/app/main.go
+      - "{{ .TOOL_SWAGGO }} --parseDependency -g ./cmd/app/main.go"
 
   docker:up:
     desc: Run docker services
