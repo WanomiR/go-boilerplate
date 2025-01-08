@@ -133,6 +133,7 @@ tasks:
       - go install {{ .TOOL_GRPC_SRC }}
       - go install {{ .TOOL_MOCKS_SRC }}
       - go install {{ .TOOL_GOOSE_SRC }}
+      - go install {{ .TOOL_SWAGGO_SRC }}
     status:
       - test -f {{ .TOOL_LINT }}
       - test -f {{ .TOOL_GO_IMPORTS }}
@@ -141,6 +142,7 @@ tasks:
       - test -f {{ .TOOL_GRPC }}
       - test -f {{ .TOOL_MOCKS }}
       - test -f {{ .TOOL_GOOSE }}
+      - test -f {{ .TOOL_SWAGGO }}
 
   tools:clear:
     desc: Remove installed tools binaries
